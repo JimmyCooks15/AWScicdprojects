@@ -1,82 +1,70 @@
+---
 name: CI/CD Pipeline for Terraform, Ansible, and Docker
-
 on:
   push:
     branches:
-      - main  # Trigger the workflow on push to the 'main' branch.
+      - main
   pull_request:
     branches:
-      - main  # Trigger the workflow on pull requests to the 'main' branch.
-
+      - main
 jobs:
-  # Terraform Job
   terraform:
     runs-on: ubuntu-latest
     environment: production
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Install Terraform
-        run: |
+        run: >
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-          sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update
-          sudo apt-get install terraform
 
+          sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+
+          sudo apt-get update
+
+          sudo apt-get install terraform
       - name: Initialize Terraform
         run: terraform init
-
       - name: Apply Terraform
         run: terraform apply -auto-approve
-
       - name: Output EC2 Instance IP
         id: get_ip
         run: echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
-
-  # Ansible Job
   ansible:
     runs-on: ubuntu-latest
-    needs: terraform  # Ensures the Terraform job runs first
-
+    needs: terraform
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Display EC2 Instance IP
-        run: echo "Using Public IP: ${{ env.PUBLIC_IP }}"
-
+        run: |
+          echo "Using Public IP: ${{ env.PUBLIC_IP }}"
       - name: Install Ansible
         run: |
           sudo apt update
           sudo apt install -y software-properties-common
           sudo add-apt-repository --yes --update ppa:ansible/ansible
           sudo apt install -y ansible
-
       - name: Set up SSH private key
-        run: |
+        run: >
           echo "${{ secrets.SSH_KEY }}" > my-key-pair.pem
-          chmod 600 my-key-pair.pem  # Set permissions to read-only for the owner
 
+          chmod 600 my-key-pair.pem  # Set permissions to read-only for the owner
       - name: Install SSL
         run: |
           sudo apt update && sudo apt install openssl -y
-
       - name: Run Ansible playbook without inventory file
         run: |
           ansible-playbook deploy.yml \
