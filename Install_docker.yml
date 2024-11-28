@@ -1,6 +1,6 @@
 ---
-- name: Install and configure Docker on the server
-  hosts: aws 
+- name: Install and configure Docker, deploy Apache, and serve index.html
+  hosts: aws
   become: true
 
   tasks:
@@ -9,7 +9,7 @@
         update_cache: yes
         upgrade: yes
 
-    - name: Install prerequisites
+    - name: Install prerequisites for Docker
       apt:
         name: "{{ item }}"
         state: present
@@ -41,10 +41,29 @@
         state: started
         enabled: true
 
-    - name: Verify Docker installation
-      shell: docker --version
-      register: docker_version_output
+    - name: Create a custom index.html
+      copy:
+        dest: /tmp/index.html
+        content: |
+          <html>
+          <head><title>Welcome</title></head>
+          <body><h1>Hello, my name is Jimmy</h1></body>
+          </html>
 
-    - name: Display Docker version
+    - name: Run Apache Docker container and mount custom index.html
+      docker_container:
+        name: apache_server
+        image: httpd:latest
+        state: started
+        ports:
+          - "80:80"
+        volumes:
+          - /tmp/index.html:/usr/local/apache2/htdocs/index.html:ro
+
+    - name: Display Docker container status
+      shell: docker ps
+      register: docker_ps_output
+
+    - name: Display Apache container running status
       debug:
-        msg: "{{ docker_version_output.stdout }}"
+        msg: "{{ docker_ps_output.stdout }}"
