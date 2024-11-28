@@ -74,8 +74,8 @@ resource "aws_security_group" "autodevs_sg" {
 }
 
 resource "aws_key_pair" "autodevs_auth" {
-  key_name = "kaungkey"
-  public_key = file("C:/Users/User/.ssh/kaungkey0.pub")
+  key_name = "id_rsa.pub"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcrIO9xM572jKPvqhK/n7q95u3l9XO+PwMv88jX410UX9AV5Q7HJjQ8XQQRCJQ33NRT3DSqEROjOftyO5IEXhmI+cjQVtTLg2V9P/BXxYN+e55/ahtcsIBCr27Wsw0mzCAWVnuj+kT44auFolhQ4iSG597iKS27/GXfNX1PdsQlCmrQyvTitWPj49zktTXgkZOX8ITRi+B1gPrdzqHceHWxHJiKkw9mLdxoaSbSuQspRJmOU0unmGMQdpqqvwXc9v6U/KW4c3OEwiJPL/kkvjkjVLQ/EE+bMFgM0i5DRWNkHzD0emB6+k38cVkg4t+PkmmpKJLaxiNkSKFnRaK0msWSJO+XFqchVLwVqIAU37MynHcS3Q+swcxJ4qUkJHfoFq0Z0/DM0ccmlXZ5lzgmrYuIWxZOlUYtXGrx1rJrCrBhjOmEOHDug7BU5ZZRLQJGaFyaaX5QYvmu0Zd5/EpOuuCuK0wxeC+4Wce6vZBmDzEww1wd7tQ6GSqI2GBfWQCcms= ehisj@JERY"
 }
 
 resource "aws_instance" "autodevs_node" {
