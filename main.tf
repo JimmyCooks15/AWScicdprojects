@@ -50,17 +50,22 @@ resource "aws_security_group" "vm_sg" {
   }
 }
 
-# Data source to fetch an existing key pair from your AWS account
-data "aws_key_pair" "existing_key" {
-  key_name = "id_rsa.pub"
-public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcrIO9xM572jKPvqhK/n7q95u3l9XO+PwMv88jX410UX9AV5Q7HJjQ8XQQRCJQ33NRT3DSqEROjOftyO5IEXhmI+cjQVtTLg2V9P/BXxYN+e55/ahtcsIBCr27Wsw0mzCAWVnuj+kT44auFolhQ4iSG597iKS27/GXfNX1PdsQlCmrQyvTitWPj49zktTXgkZOX8ITRi+B1gPrdzqHceHWxHJiKkw9mLdxoaSbSuQspRJmOU0unmGMQdpqqvwXc9v6U/KW4c3OEwiJPL/kkvjkjVLQ/EE+bMFgM0i5DRWNkHzD0emB6+k38cVkg4t+PkmmpKJLaxiNkSKFnRaK0msWSJO+XFqchVLwVqIAU37MynHcS3Q+swcxJ4qUkJHfoFq0Z0/DM0ccmlXZ5lzgmrYuIWxZOlUYtXGrx1rJrCrBhjOmEOHDug7BU5ZZRLQJGaFyaaX5QYvmu0Zd5/EpOuuCuK0wxeC+4Wce6vZBmDzEww1wd7tQ6GSqI2GBfWQCcms= ehisj@JERY"
+# Read the public key from a file (id_rsa.pub)
+data "local_file" "public_key" {
+  filename = "${path.module}/id_rsa.pub"
+}
+
+# Use the public key for creating a key pair in AWS
+resource "aws_key_pair" "existing_key" {
+  key_name   = "id_rsa"
+  public_key = data.local_file.public_key.content
 }
 
 # EC2 Instance using the key pair and security group
 resource "aws_instance" "vm" {
   ami           = "ami-0917d3c16c89e5dc3"
   instance_type = "a1.medium"
-  key_name      = data.aws_key_pair.existing_key.key_name
+  key_name      = aws_key_pair.existing_key.key_name
 
   vpc_security_group_ids = [aws_security_group.vm_sg.id]
 }
