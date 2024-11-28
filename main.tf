@@ -80,7 +80,7 @@ resource "aws_key_pair" "autodevs_auth" {
 
 resource "aws_instance" "autodevs_node" {
   instance_type = "t2.micro"
-  ami = data.aws_ami.server_ami.id
+  ami = "ami-089146c5626baa6bf"
   key_name = aws_key_pair.autodevs_auth.key_name
   vpc_security_group_ids = [aws_security_group.autodevs_sg.id]
   subnet_id = aws_subnet.autodevs_public_subnet.id
