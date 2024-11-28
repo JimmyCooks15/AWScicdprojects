@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Terraform, Ansible, and Docker
+name: CI/CD workflow
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  terraform:
+  cloudServerConfiguration:
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -30,13 +30,11 @@ jobs:
         run: terraform init
       - name: Apply Terraform
         run: terraform apply -auto-approve
-      - name: Save EC2 Instance IP
+      - name: Save EC2 Instance IP to File
         id: get_ip
-        run: |
-          echo "PUBLIC_IP=$(terraform output -raw vm_ip)" > public_ip.txt
-          cat public_ip.txt >> $GITHUB_ENV
+        run: terraform output -raw vm_ip > public_ip.txt
 
-  ansible:
+  deploymentconfiguration:
     runs-on: ubuntu-latest
     needs: terraform
     steps:
@@ -49,9 +47,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Display EC2 Instance IP
-        run: |
-          echo "Using Public IP: ${{ env.PUBLIC_IP }}"
-          cat public_ip.txt
+        run: cat public_ip.txt
       - name: Install Ansible
         run: |
           sudo apt update
