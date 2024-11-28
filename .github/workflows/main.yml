@@ -1,5 +1,5 @@
----
 name: CI/CD Pipeline for Terraform, Ansible, and Docker
+
 on:
   push:
     branches:
@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -21,14 +22,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Install Terraform
-        run: >
+        run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-
           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-
-          sudo apt-get update
-
-          sudo apt-get install terraform
+          sudo apt-get update && sudo apt-get install terraform
       - name: Initialize Terraform
         run: terraform init
       - name: Apply Terraform
@@ -36,6 +33,7 @@ jobs:
       - name: Output EC2 Instance IP
         id: get_ip
         run: echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
+
   ansible:
     runs-on: ubuntu-latest
     needs: terraform
@@ -49,8 +47,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Display EC2 Instance IP
-        run: |
-          echo "Using Public IP: ${{ env.PUBLIC_IP }}"
+        run: echo "Using Public IP: ${{ env.PUBLIC_IP }}"
       - name: Install Ansible
         run: |
           sudo apt update
@@ -58,13 +55,11 @@ jobs:
           sudo add-apt-repository --yes --update ppa:ansible/ansible
           sudo apt install -y ansible
       - name: Set up SSH private key
-        run: >
-          echo "${{ secrets.SSH_KEY }}" > my-key-pair.pem
-
-          chmod 600 my-key-pair.pem  # Set permissions to read-only for the owner
-      - name: Install SSL
         run: |
-          sudo apt update && sudo apt install openssl -y
+          echo "${{ secrets.SSH_KEY }}" > my-key-pair.pem
+          chmod 600 my-key-pair.pem
+      - name: Install SSL
+        run: sudo apt update && sudo apt install openssl -y
       - name: Run Ansible playbook without inventory file
         run: |
           ansible-playbook docker.yml \
