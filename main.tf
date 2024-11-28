@@ -1,81 +1,43 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.0"
-    }
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 2.0"
-    }
-  }
-}
+name: Terraform EC2 Provisioning
 
-provider "aws" {
-  region = "eu-west-1"
-}
+on:
+  push:
+    branches:
+      - main
 
-provider "docker" {
-  host = "unix:///var/run/docker.sock"
-}
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
 
-# Define a Security Group with a unique name or check if it exists
-resource "aws_security_group" "vm_sg" {
-  name        = "vm_security_group_${timestamp()}"
-  description = "Allow SSH and HTTP access"
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.5.4
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: "eu-west-1"
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+    - name: Set up SSH private key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AWS_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
-# Read the public key from a file (id_rsa.pub)
-data "local_file" "public_key" {
-  filename = "${path.module}/id_rsa.pub"
-}
+    - name: Initialize Terraform
+      run: terraform init
 
-# Use the public key for creating a key pair in AWS
-resource "aws_key_pair" "existing_key" {
-  key_name   = "id_rsa"
-  public_key = data.local_file.public_key.content
-}
+    - name: Apply Terraform configuration
+      run: terraform apply -auto-approve
 
-# EC2 Instance using the key pair and security group
-resource "aws_instance" "vm" {
-  ami                    = "ami-0917d3c16c89e5dc3"
-  instance_type          = "a1.medium"
-  key_name               = aws_key_pair.existing_key.key_name
-  vpc_security_group_ids = [aws_security_group.vm_sg.id]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "TfmVM"
-  }
-}
-
-# Output the public IP of the EC2 instance
-output "vm_ip" {
-  value = aws_instance.vm.public_ip
-  description = "The public IP address of the EC2 instance"
-}
+    - name: Output EC2 instance IP
+      run: |
+        echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
+        echo "Public IP: $PUBLIC_IP"
