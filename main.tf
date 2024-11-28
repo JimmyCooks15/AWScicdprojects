@@ -78,13 +78,18 @@ resource "aws_key_pair" "autodevs_auth" {
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcrIO9xM572jKPvqhK/n7q95u3l9XO+PwMv88jX410UX9AV5Q7HJjQ8XQQRCJQ33NRT3DSqEROjOftyO5IEXhmI+cjQVtTLg2V9P/BXxYN+e55/ahtcsIBCr27Wsw0mzCAWVnuj+kT44auFolhQ4iSG597iKS27/GXfNX1PdsQlCmrQyvTitWPj49zktTXgkZOX8ITRi+B1gPrdzqHceHWxHJiKkw9mLdxoaSbSuQspRJmOU0unmGMQdpqqvwXc9v6U/KW4c3OEwiJPL/kkvjkjVLQ/EE+bMFgM0i5DRWNkHzD0emB6+k38cVkg4t+PkmmpKJLaxiNkSKFnRaK0msWSJO+XFqchVLwVqIAU37MynHcS3Q+swcxJ4qUkJHfoFq0Z0/DM0ccmlXZ5lzgmrYuIWxZOlUYtXGrx1rJrCrBhjOmEOHDug7BU5ZZRLQJGaFyaaX5QYvmu0Zd5/EpOuuCuK0wxeC+4Wce6vZBmDzEww1wd7tQ6GSqI2GBfWQCcms= ehisj@JERY"
 }
 
-resource "aws_instance" "autodevs_node" {
-  instance_type = "t2.micro"
-  ami = "ami-089146c5626baa6bf"
-  key_name = aws_key_pair.autodevs_auth.key_name
-  vpc_security_group_ids = [aws_security_group.autodevs_sg.id]
-  subnet_id = aws_subnet.autodevs_public_subnet.id
+# EC2 Instance using the key pair and security group
+resource "aws_instance" "vm" {
+  ami           = "ami-0917d3c16c89e5dc3"
+  instance_type = "a1.medium"
+  key_name      = data.aws_key_pair.existing_key.key_name
 
+  vpc_security_group_ids = [aws_security_group.vm_sg.id]
+
+  tags = {
+    Name = "TfmVM"
+  }
+}
   root_block_device {
     volume_size = 10
   }
