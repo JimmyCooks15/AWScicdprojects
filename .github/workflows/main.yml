@@ -1,3 +1,13 @@
+name: CI/CD Pipeline for Terraform, Ansible, and Docker
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -15,7 +25,8 @@ jobs:
         run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update && sudo apt-get install terraform
+          sudo apt-get update
+          sudo apt-get install terraform
       - name: Initialize Terraform
         run: terraform init
       - name: Apply Terraform
