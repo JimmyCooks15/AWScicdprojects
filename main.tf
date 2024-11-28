@@ -1,43 +1,62 @@
-name: Terraform EC2 Provisioning
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 2.0"
+    }
+  }
+}
 
-on:
-  push:
-    branches:
-      - main
+provider "aws" {
+  region = "eu-west-1"
+}
 
-jobs:
-  terraform:
-    runs-on: ubuntu-latest
+resource "aws_security_group" "vm_sg" {
+  name        = "vm_security_group_${timestamp()}"
+  description = "Allow SSH and HTTP access"
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.5.4
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_region: "eu-west-1"
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 
-    - name: Set up SSH private key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.AWS_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
+data "aws_key_pair" "existing_key" {
+  key_name = "id_rsa"
+}
 
-    - name: Initialize Terraform
-      run: terraform init
+resource "aws_instance" "vm" {
+  ami                         = "ami-0917d3c16c89e5dc3"
+  instance_type               = "t2.micro"
+  key_name                    = data.aws_key_pair.existing_key.key_name
+  vpc_security_group_ids      = [aws_security_group.vm_sg.id]
+  associate_public_ip_address = true
 
-    - name: Apply Terraform configuration
-      run: terraform apply -auto-approve
+  tags = {
+    Name = "TfmVM"
+  }
+}
 
-    - name: Output EC2 instance IP
-      run: |
-        echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
-        echo "Public IP: $PUBLIC_IP"
+output "vm_ip" {
+  value = aws_instance.vm.public_ip
+}
