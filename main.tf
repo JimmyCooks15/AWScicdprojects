@@ -63,9 +63,19 @@ resource "aws_key_pair" "existing_key" {
 
 # EC2 Instance using the key pair and security group
 resource "aws_instance" "vm" {
-  ami           = "ami-0917d3c16c89e5dc3"
-  instance_type = "a1.medium"
-  key_name      = aws_key_pair.existing_key.key_name
-
+  ami                    = "ami-0917d3c16c89e5dc3"
+  instance_type          = "a1.medium"
+  key_name               = aws_key_pair.existing_key.key_name
   vpc_security_group_ids = [aws_security_group.vm_sg.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "TfmVM"
+  }
+}
+
+# Output the public IP of the EC2 instance
+output "vm_ip" {
+  value = aws_instance.vm.public_ip
+  description = "The public IP address of the EC2 instance"
 }
