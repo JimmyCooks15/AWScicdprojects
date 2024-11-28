@@ -25,15 +25,16 @@ jobs:
         run: |
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update
-          sudo apt-get install terraform
+          sudo apt-get update && sudo apt-get install terraform
       - name: Initialize Terraform
         run: terraform init
       - name: Apply Terraform
         run: terraform apply -auto-approve
       - name: Output EC2 Instance IP
         id: get_ip
-        run: echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
+        run: |
+          echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
+          echo "PUBLIC_IP=$PUBLIC_IP"  # Verify the IP is captured
 
   ansible:
     runs-on: ubuntu-latest
@@ -48,8 +49,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Display EC2 Instance IP
-        run: |
-          echo "Using Public IP: ${{ env.PUBLIC_IP }}"
+        run: echo "Using Public IP: ${{ env.PUBLIC_IP }}"
       - name: Install Ansible
         run: |
           sudo apt update
