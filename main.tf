@@ -46,7 +46,7 @@ data "aws_key_pair" "existing_key" {
 }
 
 resource "aws_instance" "vm" {
-  ami                         = "ami-0917d3c16c89e5dc3"
+  ami                         = "ami-0dcbfe330b31195ff"
   instance_type               = "t2.micro"
   key_name                    = data.aws_key_pair.existing_key.key_name
   vpc_security_group_ids      = [aws_security_group.vm_sg.id]
