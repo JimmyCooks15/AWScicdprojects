@@ -1,13 +1,3 @@
-name: CI/CD Pipeline for Terraform, Ansible, and Docker
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
 jobs:
   terraform:
     runs-on: ubuntu-latest
