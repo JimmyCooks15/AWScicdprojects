@@ -30,11 +30,11 @@ jobs:
         run: terraform init
       - name: Apply Terraform
         run: terraform apply -auto-approve
-      - name: Output EC2 Instance IP
+      - name: Save EC2 Instance IP
         id: get_ip
         run: |
-          echo "PUBLIC_IP=$(terraform output -raw vm_ip)" >> $GITHUB_ENV
-          echo "PUBLIC_IP=$PUBLIC_IP"  # Verify the IP is captured
+          echo "PUBLIC_IP=$(terraform output -raw vm_ip)" > public_ip.txt
+          cat public_ip.txt >> $GITHUB_ENV
 
   ansible:
     runs-on: ubuntu-latest
@@ -51,6 +51,7 @@ jobs:
       - name: Display EC2 Instance IP
         run: |
           echo "Using Public IP: ${{ env.PUBLIC_IP }}"
+          cat public_ip.txt
       - name: Install Ansible
         run: |
           sudo apt update
@@ -66,8 +67,8 @@ jobs:
       - name: Run Ansible playbook without inventory file
         run: |
           ansible-playbook docker.yml \
-            -i "${{ env.PUBLIC_IP }}," \
+            -i "$(cat public_ip.txt)," \
             -e "ansible_user=ubuntu" \
-            -e "ansible_host=${{ env.PUBLIC_IP }}" \
+            -e "ansible_host=$(cat public_ip.txt)" \
             -e "ansible_ssh_private_key_file=my-key-pair.pem" \
             -e "ansible_python_interpreter=/usr/bin/python3"
